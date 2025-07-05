@@ -43,6 +43,15 @@
     a:hover {
       text-decoration: underline;
     }
+    .pagination {
+      margin-top: 1rem;
+      text-align: center;
+    }
+    .pagination button {
+      margin: 0 3px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -58,10 +67,10 @@
         <th>PDF 링크</th>
       </tr>
     </thead>
-    <tbody id="faqTable">
-      <!-- 데이터 행은 아래 JS에서 자동 삽입 -->
-    </tbody>
+    <tbody id="faqTable"></tbody>
   </table>
+
+  <div class="pagination" id="pagination"></div>
 
   <footer style="margin-top: 2rem; font-size: 0.9rem; color: gray;">
     <span id="busuanzi_container_site_pv">
@@ -69,7 +78,7 @@
     </span>
   </footer>
 
-  <!-- 방문자 수 카운터 (Counter.dev) -->
+  <!-- 방문자 수 카운터 (Counter.dev - faq 전용 ID) -->
   <script defer src="https://cdn.counter.dev/script.js"
           data-id="87c02a6c-c06f-4c94-9d27-9d46d4ae65bd"
           data-utcoffset="9"></script>
@@ -77,11 +86,18 @@
 
   <script>
     let faqData = [];
+    let currentPage = 1;
+    const itemsPerPage = 20;
+    const pageButtonsLimit = 10;
 
     function renderTable(data) {
       const table = document.getElementById("faqTable");
       table.innerHTML = "";
-      data.forEach(item => {
+      const start = (currentPage - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      const pageData = data.slice(start, end);
+
+      pageData.forEach(item => {
         const row = `<tr>
           <td>${item.title}</td>
           <td>${item.content}</td>
@@ -89,6 +105,34 @@
         </tr>`;
         table.innerHTML += row;
       });
+
+      renderPagination(data.length);
+    }
+
+    function renderPagination(totalItems) {
+      const pageCount = Math.ceil(totalItems / itemsPerPage);
+      const pagination = document.getElementById("pagination");
+      pagination.innerHTML = "";
+
+      const startPage = Math.floor((currentPage - 1) / pageButtonsLimit) * pageButtonsLimit + 1;
+      const endPage = Math.min(startPage + pageButtonsLimit - 1, pageCount);
+
+      if (startPage > 1) {
+        pagination.innerHTML += `<button onclick="changePage(${startPage - 1})">◀</button>`;
+      }
+
+      for (let i = startPage; i <= endPage; i++) {
+        pagination.innerHTML += `<button onclick="changePage(${i})" ${i === currentPage ? 'style="font-weight:bold"' : ''}>${i}</button>`;
+      }
+
+      if (endPage < pageCount) {
+        pagination.innerHTML += `<button onclick="changePage(${endPage + 1})">▶</button>`;
+      }
+    }
+
+    function changePage(page) {
+      currentPage = page;
+      filterResults();
     }
 
     function filterResults() {
@@ -113,6 +157,7 @@
             content: row['내용'],
             page: row['페이지']
           }));
+          currentPage = 1;
           filterResults();
         },
         error: function(err, file, inputElem, reason) {
