@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>의료기기 FAQ 검색 (2012년~2024년)</title>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
@@ -21,7 +21,7 @@
     button {
       padding: 0.5rem 1rem;
       font-size: 1rem;
-      margin-left: 0.5rem;
+      margin-left: 0.25rem;
       cursor: pointer;
     }
     table {
@@ -48,19 +48,21 @@
       margin-top: 1rem;
       text-align: center;
     }
-    .pagination button {
-      margin: 0 0.25rem;
-      padding: 0.5rem 1rem;
+    .pagination button:disabled {
+      background-color: #ddd;
+      font-weight: bold;
+      color: #333;
     }
   </style>
-<script src="https://cdn.counter.dev/script.js" data-id="87c02a6c-c06f-4c94-9d27-9d46d4ae65bd" data-utcoffset="9"></script>
+  <script src="https://cdn.counter.dev/script.js" data-id="87c02a6c-c06f-4c94-9d27-9d46d4ae65bd" data-utcoffset="9"></script>
 </head>
 <body>
   <h1>📄 의료기기 FAQ 키워드 검색</h1>
   <input type="text" id="searchInput" placeholder="키워드를 입력하세요 (예: 의료기기, GMP 등)">
   <button onclick="loadFromCSV()">검색</button>
 
-  <div id="resultCount" style="margin-top:1rem; font-weight:bold;"></div><table>
+  <div id="resultCount" style="margin-top:1rem; font-weight:bold;"></div>
+  <table>
     <thead>
       <tr>
         <th>제목</th>
@@ -77,7 +79,9 @@
     let faqData = [];
     let filteredData = [];
     let currentPage = 1;
+    let currentButtonStart = 1;
     const itemsPerPage = 20;
+    const maxVisibleButtons = 10;
 
     function renderTablePage(page) {
       const table = document.getElementById("faqTable");
@@ -104,18 +108,44 @@
       const pagination = document.getElementById("pagination");
       pagination.innerHTML = "";
 
-      for (let i = 1; i <= pageCount; i++) {
+      const buttonEnd = Math.min(currentButtonStart + maxVisibleButtons - 1, pageCount);
+
+      if (currentButtonStart > 1) {
+        const prev = document.createElement("button");
+        prev.innerText = "◀";
+        prev.addEventListener("click", () => {
+          currentButtonStart = Math.max(currentButtonStart - 1, 1);
+          renderPagination();
+          renderTablePage(currentPage);
+        });
+        pagination.appendChild(prev);
+      }
+
+      for (let i = currentButtonStart; i <= buttonEnd; i++) {
         const button = document.createElement("button");
         button.innerText = i;
         if (i === currentPage) {
           button.disabled = true;
+          button.style.backgroundColor = "#ddd";
+          button.style.fontWeight = "bold";
         }
         button.addEventListener("click", () => {
           currentPage = i;
-          document.getElementById("resultCount").innerText = `총 ${filteredData.length}건 검색됨`;
+          renderPagination();
           renderTablePage(currentPage);
         });
         pagination.appendChild(button);
+      }
+
+      if (buttonEnd < pageCount) {
+        const next = document.createElement("button");
+        next.innerText = "▶";
+        next.addEventListener("click", () => {
+          currentButtonStart = Math.min(currentButtonStart + 1, pageCount - maxVisibleButtons + 1);
+          renderPagination();
+          renderTablePage(currentPage);
+        });
+        pagination.appendChild(next);
       }
     }
 
@@ -126,6 +156,7 @@
         (item.content || '').toLowerCase().includes(keyword)
       );
       currentPage = 1;
+      currentButtonStart = 1;
       document.getElementById("resultCount").innerText = `총 ${filteredData.length}건 검색됨`;
       renderTablePage(currentPage);
     }
